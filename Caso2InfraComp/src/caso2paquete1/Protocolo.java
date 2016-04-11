@@ -23,6 +23,7 @@ public class Protocolo
 	public static final String ACT2="ACT2";
 	public static final String SEPARADOR=":";
 	public static final String DATA="DATA";
+	public static final String RTA="RTA";
 	
 	
 	public static String concatnenar(String[] aConcatener)

@@ -11,7 +11,7 @@ public class MainServidor
 	{
 		String[] nuevo=new String[0] ;
 		Coordinador servidor= new Coordinador();
-//		CoordinadorNS servidor= new CoordinadorNS();
+	//	CoordinadorNS servidor= new CoordinadorNS();
 		try {
 			servidor.main(nuevo);
 		} catch (Exception e) {

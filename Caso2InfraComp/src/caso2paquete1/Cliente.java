@@ -1,6 +1,9 @@
 package caso2paquete1;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,13 +12,19 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.io.input.ReaderInputStream;
@@ -25,15 +34,12 @@ public class Cliente
 
 {
 	
-	private Transformacion archivoParaTransformar;
 	private Socket socketCliente;
 	private  PrintWriter salida;
 	private BufferedReader in;
-	private OutputStream outBytes;
 	private Cifrado cifrado;
 	private String ipServidor;
 	private int puertoServidor;
-	private InputStream inBytes;
 	private BufferedReader brSistema;
 	private String  sime;
 	private String aSime;
@@ -41,6 +47,8 @@ public class Cliente
 	private X509Certificate cert;
 	private KeyPair keyPair;
 	private String algortimoFirma;
+	private X509Certificate certificadoServidor;
+	private SecretKey simetrica ;
 	public Cliente(String ip, int puerto,BufferedReader br)
 	{
 		ipServidor=ip;
@@ -48,12 +56,11 @@ public class Cliente
 		try
 		{
 			socketCliente= new Socket(ipServidor, puertoServidor);
-			outBytes=socketCliente.getOutputStream();
-			salida=new PrintWriter(outBytes,true);
-			inBytes= socketCliente.getInputStream();
-			in=new BufferedReader(new InputStreamReader(inBytes));
+			//socketCliente.setSoTimeout(10000);
+			
+			salida=new PrintWriter(socketCliente.getOutputStream(),true);
+			in=new BufferedReader(new InputStreamReader(socketCliente.getInputStream()));
 			brSistema=br;
-			Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		}
 		catch(Exception e)
 		{
@@ -62,7 +69,7 @@ public class Cliente
 	}
 	
 
-	private void inicarComunicacion() throws IOException, NoSuchAlgorithmException, CertificateException
+	private void inicarComunicacion(String posicion) throws Exception
 	{
 		salida.println(Protocolo.HOLA);
 		String delServidor= in.readLine();
@@ -92,25 +99,69 @@ public class Cliente
 			salida.println(Protocolo.CERCLNT);
 			cert=certificado();
 			byte[] certBytes=cert.getEncoded();
-			outBytes.write(certBytes);
-			outBytes.flush();
+						
+			socketCliente.getOutputStream().write(certBytes);
+			socketCliente.getOutputStream().flush();
 			delServidor= in.readLine();
 			System.out.println("Del servidor "+delServidor);
 			if(delServidor.equals(Protocolo.CERTSRV))
 			{
-				
-//				CertificateFactory factory = CertificateFactory.getInstance("X.509");
-//				X509Certificate certServ = (X509Certificate) factory.generateCertificates(inBytes);
-//				System.out.println("llego el certificado");
-				
-				
-				while((delServidor= in.readLine())!=null)
-				{
+				int offset=0;
+	            byte[] certificadoServidorBytes= new byte[520];
+	            int numBytesLeidos = socketCliente.getInputStream().read(certificadoServidorBytes, offset, 520 - offset);
+	            System.out.println("Numero de bytes leidos "+numBytesLeidos);
+	            CertificateFactory creador = CertificateFactory.getInstance("X.509");
+	            InputStream ent = new ByteArrayInputStream(certificadoServidorBytes);
+	            certificadoServidor = (X509Certificate)creador.generateCertificate(ent);
+	            salida.println(Protocolo.ESTADO+Protocolo.SEPARADOR+Protocolo.OK);
+	           
+	            delServidor= in.readLine();
+				System.out.println("Del servidor "+delServidor);
+				String llave=delServidor.split(Protocolo.SEPARADOR)[1];
+	            byte []llaveSimetrica=Transformacion.destransformar(llave);
+	            byte[] llaveDescifrada= Cifrado.descifrar(llaveSimetrica, keyPair.getPrivate(), aSime);
+	            
+	            
+	            simetrica=new SecretKeySpec(llaveDescifrada, 0, llaveDescifrada.length, sime);
+	            byte[] llaveSimetricaCifrada=Cifrado.cifrar(simetrica.getEncoded(), certificadoServidor.getPublicKey(), aSime);
+	            String llaveSimetricaTexto= Transformacion.transformar(llaveSimetricaCifrada);
+	            String llaveSImetricaAEnviar=Protocolo.DATA+Protocolo.SEPARADOR+llaveSimetricaTexto;
+	            salida.println(llaveSImetricaAEnviar);
+	            System.out.println("Al servidor "+llaveSImetricaAEnviar);
+	            delServidor= in.readLine();
+				System.out.println("Del servidor "+delServidor);
+	            if(delServidor.split(Protocolo.SEPARADOR)[1].equals(Protocolo.OK))
+	            {
+	            	String aEnviarACT1=Protocolo.ACT1+Protocolo.SEPARADOR;
+	            	byte[] posicionEncriptada=Cifrado.cifradoSimetrico(posicion.getBytes(), simetrica, sime);
+	            	aEnviarACT1+=Transformacion.transformar(posicionEncriptada);
+	            	salida.println(aEnviarACT1);
+		            System.out.println("Al servidor "+aEnviarACT1);
+	            	
+		            String aEnviarACT2=Protocolo.ACT2+Protocolo.SEPARADOR;
+		            byte hash[]=Cifrado.cifrar(posicion.getBytes(), certificadoServidor.getPublicKey(), aSime);
+		            String encodingAct2=Transformacion.transformar(hash);
+		            aEnviarACT2+=encodingAct2;
+		            salida.println(encodingAct2);
+		            System.out.println("Al servidor "+encodingAct2);
+		            
+		            delServidor= in.readLine();
 					System.out.println("Del servidor "+delServidor);
-				}
-				
-				
-				
+					if(delServidor.equals(Protocolo.RTA+Protocolo.SEPARADOR+Protocolo.OK))
+					{
+						System.out.println("Correcot");
+						socketCliente.close();
+					}
+					else
+					{
+						System.out.println("Error ");
+						socketCliente.close();
+					}
+	            }
+	            else
+	            {
+	            	System.out.println("Ocurrio un error con la llave simétrica");
+	            }
 			}
 			else
 			{
@@ -200,7 +251,7 @@ public class Cliente
 		String rta="";
 		while(true)
 		{
-		System.out.println("Algoritmo de fimrado");
+		System.out.println("Algoritmo de firmado");
 		System.out.println("Ingrese el número de la opción deseada");
 		System.out.println("Opción 1: \n HmacMD5");
 		System.out.println("Opción 2: \n HmacSHA1");
@@ -288,6 +339,7 @@ public class Cliente
 	public static void main(String[] args) 
 	{
 		
+		System.gc();
         try{
         	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
             System.out.print("Ip del servidor");
@@ -296,7 +348,7 @@ public class Cliente
             System.out.print("Puerto del servidor");
             int i = Integer.parseInt(br.readLine());
             Cliente cliente= new Cliente(s, i,br);
-            cliente.inicarComunicacion();
+            cliente.inicarComunicacion("41 24.2028, 2 10.4418");
         }catch(NumberFormatException nfe){
             System.err.println("Invalid Format!");
         } catch (IOException e) {
@@ -306,6 +358,9 @@ public class Cliente
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (CertificateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
