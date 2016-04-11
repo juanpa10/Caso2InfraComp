@@ -28,6 +28,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.io.input.ReaderInputStream;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.x509.X509V1CertificateGenerator;
 
 public class Cliente 
@@ -61,6 +62,7 @@ public class Cliente
 			salida=new PrintWriter(socketCliente.getOutputStream(),true);
 			in=new BufferedReader(new InputStreamReader(socketCliente.getInputStream()));
 			brSistema=br;
+			Security.addProvider(new BouncyCastleProvider());
 		}
 		catch(Exception e)
 		{
@@ -139,18 +141,21 @@ public class Cliente
 		            System.out.println("Al servidor "+aEnviarACT1);
 	            	
 		            String aEnviarACT2=Protocolo.ACT2+Protocolo.SEPARADOR;
-		            byte hash[]=Cifrado.cifrar(posicion.getBytes(), certificadoServidor.getPublicKey(), aSime);
-		            String encodingAct2=Transformacion.transformar(hash);
+
+		            
+		            byte[] hash=Cifrado.calcularMac(posicion.getBytes(), simetrica, firmado);
+		            byte[] hashCifrrado=Cifrado.cifrar(hash, keyPair.getPrivate(), aSime);
+		            String encodingAct2=Transformacion.transformar(hashCifrrado);
 		            aEnviarACT2+=encodingAct2;
-		            salida.println(encodingAct2);
-		            System.out.println("Al servidor "+encodingAct2);
+		            salida.println(aEnviarACT2);
+		            System.out.println("Al servidor "+aEnviarACT2);
 		            
 		            delServidor= in.readLine();
 					System.out.println("Del servidor "+delServidor);
-					if(delServidor.equals(Protocolo.RTA+Protocolo.SEPARADOR+Protocolo.OK))
+					if(delServidor.equals(Protocolo.ESTADO+Protocolo.SEPARADOR+Protocolo.OK))
 					{
-						System.out.println("Correcot");
-						socketCliente.close();
+						System.out.println("Termino exitosamente");
+						socketCliente.close();                                                                                                                                                                                                                                                                                                                                                                                
 					}
 					else
 					{
@@ -345,10 +350,12 @@ public class Cliente
             System.out.print("Ip del servidor");
             String s = br.readLine();
             System.out.print("Puerto del servidor");
-            System.out.print("Puerto del servidor");
             int i = Integer.parseInt(br.readLine());
             Cliente cliente= new Cliente(s, i,br);
-            cliente.inicarComunicacion("41 24.2028, 2 10.4418");
+            //Cliente cliente= new Cliente("localhost", 4567,br);
+			 System.out.print("Mensaje a enviar");
+			  s = br.readLine();
+            cliente.inicarComunicacion(s);
         }catch(NumberFormatException nfe){
             System.err.println("Invalid Format!");
         } catch (IOException e) {
