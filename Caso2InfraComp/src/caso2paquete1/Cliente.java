@@ -347,7 +347,7 @@ public class Cliente
 		System.gc();
         try{
         	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-<<<<<<< HEAD
+
             System.out.print("Ip del servidor");
             String s = br.readLine();
             System.out.print("Puerto del servidor");
@@ -357,16 +357,7 @@ public class Cliente
 			 System.out.print("Mensaje a enviar");
 			  s = br.readLine();
             cliente.inicarComunicacion(s);
-=======
-//            System.out.print("Ip del servidor");
-//            String s = br.readLine();
-//            System.out.print("Puerto del servidor");
-//            System.out.print("Puerto del servidor");
-//            int i = Integer.parseInt(br.readLine());
-            //Cliente cliente= new Cliente(s, i,br);
-            Cliente cliente= new Cliente("localhost", 4567,br);
-            cliente.inicarComunicacion("41 24.2028, 2 10.4418");
->>>>>>> e02aab47273cda61807c28ee898cbec889c8823e
+
         }catch(NumberFormatException nfe){
             System.err.println("Invalid Format!");
         } catch (IOException e) {
