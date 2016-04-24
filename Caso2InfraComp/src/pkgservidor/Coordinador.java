@@ -10,6 +10,8 @@ import java.security.Security;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import caso2paquete1.Csv;
+
 public class Coordinador {
 
 	private static ServerSocket ss;	
@@ -41,12 +43,13 @@ public class Coordinador {
 		keyPairServidor = S.grsa();
 		certSer = S.gc(keyPairServidor);
 		ExecutorService executor = Executors.newFixedThreadPool(tamnioPoll);
+		Csv archi= new Csv(12,"Servidor");
 		while (true) {
 			try { 
 				// Crea un delegado por cliente. Atiende por conexion. 
 				Socket sc = ss.accept();
 				System.out.println(MAESTRO + "Cliente " + idThread + " aceptado.");
-				Delegado d = new Delegado(sc,idThread);
+				Delegado d = new Delegado(sc,idThread,archi);
 				idThread++;
 				executor.execute(d);
 			} catch (IOException e) {

@@ -5,10 +5,15 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.net.Socket;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
+
 import javax.crypto.SecretKey;
+
+import caso2paquete1.Csv;
 
 public class Delegado extends Thread {
 	// Constantes
@@ -29,10 +34,16 @@ public class Delegado extends Thread {
 	// Atributos
 	private Socket sc = null;
 	private String dlg;
+	private Csv aGuardar;
+	private long tiempoIntercambio;
+	private long timepoRespuesta;
+	private boolean terminoBien;
 	
-	Delegado (Socket csP, int idP) {
+	Delegado (Socket csP, int idP,Csv arch) {
+		terminoBien=true;
 		sc = csP;
 		dlg = new String("dlg " + idP + ": ");
+		aGuardar=arch;
 	}
 	
 	public void run() {
@@ -94,6 +105,7 @@ public class Delegado extends Thread {
 					throw new Exception(dlg + ERRORPRT + "CERCLNT." + REC + linea + "-terminando.");
 				}
 				System.out.println(dlg + REC + mt + "-continuando.");
+				tiempoIntercambio=System.nanoTime();
 				int offset = 0;
 				byte[] certificadoServidorBytes = new byte[520];
 				int numBytesLeidos = sc.getInputStream().read(certificadoServidorBytes,offset,520-offset);
@@ -120,7 +132,7 @@ public class Delegado extends Thread {
 					throw new Exception(dlg + ERRORPRT + REC + linea + "-terminando.");
 				}
 				System.out.println(dlg + "recibio-" + linea + "-continuando.");
-
+				tiempoIntercambio=System.nanoTime()-tiempoIntercambio;
 				/***** Fase 5: Envia llave simetrica *****/
 				SecretKey simetrica = S.kgg(algoritmos[1]);
 				byte [ ] ciphertext1 = S.ae(simetrica.getEncoded(), 
@@ -144,6 +156,7 @@ public class Delegado extends Thread {
 					ac.println(me);
 					throw new Exception(dlg + "Error en ACT1. terminando.");
 				}
+				timepoRespuesta=System.nanoTime();
 				String datos = new String(S.sd(
 						Transformacion.destransformar( linea.split(SEPARADOR)[1]), simetrica, algoritmos[1]));
 				linea = dc.readLine();
@@ -166,9 +179,22 @@ public class Delegado extends Thread {
 				}
 		        sc.close();
 		        System.out.println(dlg + "Termino exitosamente.");
-				
+		        timepoRespuesta=System.nanoTime()-timepoRespuesta;
+		        terminoBien=false;
+		        
 	        } catch (Exception e) {
-	          e.printStackTrace();
+	          //e.printStackTrace();
 	        }
+	       
+	       
+	        double uso=ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+	        try {
+				TimeUnit.SECONDS.sleep(3);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	        aGuardar.escribir(tiempoIntercambio, timepoRespuesta, terminoBien, uso,dlg);
+	        System.out.println("Escribe mal");
 	}
 }

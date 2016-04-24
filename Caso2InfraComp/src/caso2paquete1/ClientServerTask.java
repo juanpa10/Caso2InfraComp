@@ -7,8 +7,17 @@ import uniandes.gload.core.Task;
 
 public class ClientServerTask extends Task
 {
+	private int numUsAct;
+	private Csv arepr;
 	
 	
+	private int cant=0;
+	public ClientServerTask(int numUs,Csv arepor)
+	{
+		arepr=arepor;
+		numUsAct=numUs;
+	}
+		
 	@Override
 	public void fail() 
 	{
@@ -29,7 +38,7 @@ public class ClientServerTask extends Task
 	public void execute()
 	{
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		Cliente cliente= new Cliente("localhost", 4567, br);
+		Cliente cliente= new Cliente("localhost", 4567, br,cant++,numUsAct,arepr);
 		try {
 			cliente.inicarComunicacion("Holi");
 		} catch (Exception e) {

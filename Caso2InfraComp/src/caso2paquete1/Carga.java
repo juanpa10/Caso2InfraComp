@@ -14,14 +14,15 @@ public class Carga
 	
 	public Carga(int numeroDeConcurrentes,int tiempoEntre)
 	{
-		Task work =createTask();
+		Csv guard=new Csv(numeroDeConcurrentes,"Cliente");
+		Task work =createTask(numeroDeConcurrentes,guard);
 		generator= new LoadGenerator("Prueba cliente servidor", numeroDeConcurrentes, work, tiempoEntre);
 		generator.generate();
 	}
 	
-	public Task createTask()
+	public Task createTask(int nuUs,Csv aGuardar)
 	{
-		ClientServerTask nuevo=  new ClientServerTask();
+		ClientServerTask nuevo=  new ClientServerTask(nuUs,aGuardar);
 		return nuevo;
 	}
 	

@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -50,9 +51,19 @@ public class Cliente
 	private String algortimoFirma;
 	private X509Certificate certificadoServidor;
 	private SecretKey simetrica ;
-	public Cliente(String ip, int puerto,BufferedReader br)
+	private int codigAct;
+	private int usuariosCOncurrentes;
+	private Csv aReportar;
+	private long tiempoIntercambio;
+	private long timepoRespuesta;
+	private boolean terminoBien;
+	public Cliente(String ip, int puerto,BufferedReader br,int cod,int numUsuariosConcuurentes, Csv reportar)
 	{
+		terminoBien=true;
+		aReportar=reportar;
+		codigAct=cod;
 		ipServidor=ip;
+		usuariosCOncurrentes=numUsuariosConcuurentes;
 		puertoServidor=puerto;
 		try
 		{
@@ -102,6 +113,7 @@ public class Cliente
 		
 		if(estado[1].equals(Protocolo.OK))
 		{
+			 tiempoIntercambio=System.nanoTime();
 			salida.println(Protocolo.CERCLNT);
 			cert=certificado();
 			byte[] certBytes=cert.getEncoded();
@@ -120,7 +132,7 @@ public class Cliente
 	            InputStream ent = new ByteArrayInputStream(certificadoServidorBytes);
 	            certificadoServidor = (X509Certificate)creador.generateCertificate(ent);
 	            salida.println(Protocolo.ESTADO+Protocolo.SEPARADOR+Protocolo.OK);
-	           
+	            tiempoIntercambio=(System.nanoTime()-tiempoIntercambio);
 	            delServidor= in.readLine();
 				System.out.println("Del servidor "+delServidor);
 				String llave=delServidor.split(Protocolo.SEPARADOR)[1];
@@ -143,7 +155,7 @@ public class Cliente
 	            	aEnviarACT1+=Transformacion.transformar(posicionEncriptada);
 	            	salida.println(aEnviarACT1);
 		            System.out.println("Al servidor "+aEnviarACT1);
-	            	
+		            timepoRespuesta= System.nanoTime();
 		            String aEnviarACT2=Protocolo.ACT2+Protocolo.SEPARADOR;
 
 		            
@@ -156,10 +168,12 @@ public class Cliente
 		            
 		            delServidor= in.readLine();
 					System.out.println("Del servidor "+delServidor);
+					timepoRespuesta=System.nanoTime()-timepoRespuesta;
 					if(delServidor.equals(Protocolo.ESTADO+Protocolo.SEPARADOR+Protocolo.OK))
 					{
 						System.out.println("Termino exitosamente");
-						socketCliente.close();                                                                                                                                                                                                                                                                                                                                                                                
+						socketCliente.close();  
+						terminoBien=false;
 					}
 					else
 					{
@@ -184,7 +198,8 @@ public class Cliente
 		
 		
 		}
-		
+		double uso=ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+		aReportar.escribir(tiempoIntercambio, timepoRespuesta, terminoBien, uso,codigAct+"");
 	}
 	
 	private String seleccionarAlgorimoSimetrico() throws IOException
@@ -345,41 +360,41 @@ public class Cliente
 	}
 	
 	
-	public static void main(String[] args) 
-	{
-		
-		System.gc();
-        try{
-        	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-
+//	public static void main(String[] args) 
+//	{
+//		
+//		System.gc();
+//        try{
+//        	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+//
 //            System.out.print("Ip del servidor");
 //            String s = br.readLine();
 //            System.out.print("Puerto del servidor");
 //            int i = Integer.parseInt(br.readLine());
 //            Cliente cliente= new Cliente(s, i,br);
-            Cliente cliente= new Cliente("localhost", 4567,br);
+//            Cliente cliente= new Cliente("localhost", 4567,br);
 //			 System.out.print("Mensaje a enviar");
 //			  s = br.readLine();
-            cliente.inicarComunicacion("Por defecto");
-
-        }catch(NumberFormatException nfe){
-            System.err.println("Invalid Format!");
-        } catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (CertificateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-	}
+//            cliente.inicarComunicacion("Por defecto");
+//
+//        }catch(NumberFormatException nfe){
+//            System.err.println("Invalid Format!");
+//        } catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (NoSuchAlgorithmException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (CertificateException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//		
+//	}
 
 }
 
