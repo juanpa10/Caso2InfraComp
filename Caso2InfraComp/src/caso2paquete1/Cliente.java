@@ -71,16 +71,20 @@ public class Cliente
 	}
 	
 
-	private void inicarComunicacion(String posicion) throws Exception
+	public void inicarComunicacion(String posicion) throws Exception
 	{
 		salida.println(Protocolo.HOLA);
 		String delServidor= in.readLine();
 		System.out.println("Del servidor "+delServidor);
 		if(delServidor.equals(Protocolo.INICIO))
 		{
-			 sime=seleccionarAlgorimoSimetrico();
-			 aSime=seleccionarAlgorimoASimetrico();
-			 firmado=seleccionarAlgorimodeFirmado();
+//			 sime=seleccionarAlgorimoSimetrico();
+//			 aSime=seleccionarAlgorimoASimetrico();
+//			 firmado=seleccionarAlgorimodeFirmado();
+			 
+			 sime=Protocolo.DES;
+			 aSime=Protocolo.RSA;
+			 firmado=Protocolo.HMACMD5;
 			 
 			String[] aEnviar= new String[4];
 			aEnviar[0]=Protocolo.ALGORITMOS;
@@ -348,15 +352,15 @@ public class Cliente
         try{
         	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-            System.out.print("Ip del servidor");
-            String s = br.readLine();
-            System.out.print("Puerto del servidor");
-            int i = Integer.parseInt(br.readLine());
-            Cliente cliente= new Cliente(s, i,br);
-            //Cliente cliente= new Cliente("localhost", 4567,br);
-			 System.out.print("Mensaje a enviar");
-			  s = br.readLine();
-            cliente.inicarComunicacion(s);
+//            System.out.print("Ip del servidor");
+//            String s = br.readLine();
+//            System.out.print("Puerto del servidor");
+//            int i = Integer.parseInt(br.readLine());
+//            Cliente cliente= new Cliente(s, i,br);
+            Cliente cliente= new Cliente("localhost", 4567,br);
+//			 System.out.print("Mensaje a enviar");
+//			  s = br.readLine();
+            cliente.inicarComunicacion("Por defecto");
 
         }catch(NumberFormatException nfe){
             System.err.println("Invalid Format!");
