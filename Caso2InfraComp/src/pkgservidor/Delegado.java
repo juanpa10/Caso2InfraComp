@@ -195,6 +195,6 @@ public class Delegado extends Thread {
 				e.printStackTrace();
 			}
 	        aGuardar.escribir(tiempoIntercambio, timepoRespuesta, terminoBien, uso,dlg);
-	        System.out.println("Escribe mal");
+	        System.out.println("Escribio");
 	}
 }
