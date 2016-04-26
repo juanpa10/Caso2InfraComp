@@ -16,7 +16,9 @@ public class Csv
 	
 	{
 		try {
-			writer = new FileWriter(ruta,true);
+			synchronized (writer) {
+				writer = new FileWriter(ruta,true);
+			}
 			 writer.append(timepoAutentic+"");
 			    writer.append(',');
 			    writer.append(tiempoActu+"");

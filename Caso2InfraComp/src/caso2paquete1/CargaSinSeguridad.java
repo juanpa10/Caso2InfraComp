@@ -17,7 +17,10 @@ public class CargaSinSeguridad
 		Csv guard=new Csv(numeroDeConcurrentes,"Sin seguridad Cliente");
 		Task work =createTask(numeroDeConcurrentes,guard);
 		generator= new LoadGenerator("Prueba cliente servidor", numeroDeConcurrentes, work, tiempoEntre);
-		generator.generate();
+		for (int i = 0; i < 10; i++) {
+			generator.generate();
+		}
+		
 	}
 	
 	public Task createTask(int nuUs,Csv aGuardar)
@@ -29,8 +32,8 @@ public class CargaSinSeguridad
 	
 	public static void main(String[] args)
 	{
-		int con=10;
-		int timepo=1000;
+		int con=400;
+		int timepo=20;
 		
 		CargaSinSeguridad ne= new CargaSinSeguridad(con, timepo);
 	}
