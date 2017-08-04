@@ -31,6 +31,9 @@ public static byte[] descifrar(byte [] data, Key llave, String algoritmo) throws
 	cipher.init(Cipher.DECRYPT_MODE, llave);
 	return cipher.doFinal(data); 
 }
+public void prueba(){
+	//prueba de git en repo viejo
+}
 
 public static byte[] cifrar(byte[] data, Key llave, String algoritmo) throws Exception,NoSuchAlgorithmException
 {
